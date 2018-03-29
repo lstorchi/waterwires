@@ -38,6 +38,7 @@ os.chdir("./")
 
 if_exist_rm ("final.txt")
 fp = open("final.txt", "w")
+wires_centroids = {}
 
 for file in glob.glob("*.pdb"):
     print(file)
@@ -104,21 +105,41 @@ for file in glob.glob("*.pdb"):
         tot = 0
         molidx = 1
         for wire in wires:
-            print "   ", len(wire)
-            fp.write(str(len(wire)) + "\n")
-            tot += len(wire)
+            wirelen = len(wire)
+            print "   ", wirelen
+            fp.write(str(wirelen) + "\n")
+            tot += wirelen
+
+            if not (wirelen in wires_centroids):
+                wires_centroids[wirelen] = []
 
             obmol = openbabel.OBMol()
             lidx = 0
+            xcentr = 0.0
+            ycentr = 0.0
+            zcentr = 0.0
             for idx in wire:
+                x = sort_acoordslist[idx][0]
+                y = sort_acoordslist[idx][1]
+                z = sort_acoordslist[idx][2]
+
+                xcentr += x
+                ycentr += y
+                zcentr += z
+
                 newobatom = openbabel.OBAtom()
                 newobatom.SetAtomicNum(8)
                 newobatom.SetId(lidx)
                 newobatom.SetIdx(lidx)
-                newobatom.SetVector(sort_acoordslist[idx][0], \
-                        sort_acoordslist[idx][1], sort_acoordslist[idx][2]) 
+                newobatom.SetVector(x, y, z)
                 obmol.AddAtom(newobatom)
                 lidx = lidx + 1
+
+            xcentr = xcentr / float(wirelen)
+            ycentr = ycentr / float(wirelen)
+            zcentr = zcentr / float(wirelen)
+
+            wires_centroids[wirelen].append((xcentr, ycentr, zcentr))
 
             for idx in range(1,len(wire)):
                 obmol.AddBond(idx-1, idx, 1)
@@ -131,3 +152,15 @@ for file in glob.glob("*.pdb"):
             print "error in total number"
 
 fp.close()
+
+for num in wires_centroids:
+    fname = str(num) + ".xyz"
+    if_exist_rm (fname)
+
+    fp = open(fname, "w")
+    fp.write(str(len(wires_centroids[num])) + "\n")
+    fp.write(str(num) + "\n")
+
+    for c in wires_centroids[num]:
+        fp.write("H %12.5f %12.5f %12.5f\n"%(c[0], c[1], c[2]))
+    fp.close()
