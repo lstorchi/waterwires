@@ -47,7 +47,7 @@ for file in glob.glob("*.pdb"):
 
     if len(mol) != 1:
         print "Each file should contain a single molecule set"
-        eit(1)
+        exit(1)
 
     acoordslist = []
     for a in mol[0].atoms:
